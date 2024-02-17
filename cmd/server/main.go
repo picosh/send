@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -11,14 +12,14 @@ import (
 	"github.com/charmbracelet/wish"
 	"github.com/picosh/send/send"
 	"github.com/picosh/send/send/utils"
-	"go.uber.org/zap"
 )
 
 type handler struct {
 }
 
-func (h *handler) GetLogger() *zap.SugaredLogger {
-	return zap.NewNop().Sugar()
+func (h *handler) GetLogger() *slog.Logger {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	return logger
 }
 
 func (h *handler) Write(session ssh.Session, file *utils.FileEntry) (string, error) {

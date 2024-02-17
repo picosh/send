@@ -8,7 +8,6 @@ require (
 	github.com/charmbracelet/wish v1.2.0
 	github.com/matryer/is v1.4.1
 	github.com/pkg/sftp v1.13.6
-	go.uber.org/zap v1.26.0
 )
 
 require (
@@ -28,7 +27,6 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/exp v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/sys v0.14.0 // indirect
