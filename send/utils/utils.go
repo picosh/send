@@ -57,6 +57,7 @@ func octalPerms(info fs.FileMode) string {
 // being copied from the client to the server.
 type CopyFromClientHandler interface {
 	// Write should write the given file.
+	Delete(ssh.Session, *FileEntry) error
 	Write(ssh.Session, *FileEntry) (string, error)
 	Read(ssh.Session, *FileEntry) (os.FileInfo, ReaderAtCloser, error)
 	List(ssh ssh.Session, path string, isDir bool, recursive bool) ([]os.FileInfo, error)
