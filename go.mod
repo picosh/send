@@ -1,6 +1,6 @@
 module github.com/picosh/send
 
-go 1.21.4
+go 1.22
 
 require (
 	github.com/antoniomika/go-rsync-receiver v0.0.0-20231110145728-c94949e1ab7d

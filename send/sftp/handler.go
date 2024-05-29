@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 
 	"slices"
 
@@ -34,14 +35,23 @@ type handler struct {
 
 func (f *handler) Filecmd(r *sftp.Request) error {
 	switch r.Method {
-	case "Remove":
+	case "Rmdir", "Remove":
 		entry := toFileEntry(r)
-		entry.Reader = bytes.NewReader(nil)
+
+		if r.Method == "Rmdir" {
+			entry.Mode = os.ModeDir
+		}
+
+		return f.writeHandler.Delete(f.session, entry)
+	case "Mkdir":
+		entry := toFileEntry(r)
+
+		entry.Mode = os.ModeDir
 
 		_, err := f.writeHandler.Write(f.session, entry)
 
 		return err
-	case "Setstat", "Mkdir":
+	case "Setstat":
 		return nil
 	}
 	return errors.New("unsupported")
@@ -57,10 +67,22 @@ func (f *handler) Filelist(r *sftp.Request) (sftp.ListerAt, error) {
 			return nil, err
 		}
 
-		if list {
+		// an empty string from minio or exact match from filepath base name is what we want
+
+		if !list {
+			listData = slices.DeleteFunc(listData, func(f os.FileInfo) bool {
+				return !(f.Name() == "" || f.Name() == filepath.Base(r.Filepath))
+			})
+		}
+
+		if r.Filepath == "/" {
 			listData = slices.DeleteFunc(listData, func(f os.FileInfo) bool {
 				return f.Name() == "/"
 			})
+			listData = slices.Insert(listData, 0, os.FileInfo(&utils.VirtualFile{
+				FName:  ".",
+				FIsDir: true,
+			}))
 		}
 
 		return listerat(listData), nil
@@ -82,6 +104,13 @@ func toFileEntry(r *sftp.Request) *utils.FileEntry {
 
 func (f *handler) Filewrite(r *sftp.Request) (io.WriterAt, error) {
 	entry := toFileEntry(r)
+	entry.Reader = bytes.NewReader([]byte{})
+
+	_, err := f.writeHandler.Write(f.session, entry)
+	if err != nil {
+		return nil, err
+	}
+
 	buf := &buffer{}
 	entry.Reader = buf
 

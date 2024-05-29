@@ -22,6 +22,12 @@ func (h *handler) GetLogger() *slog.Logger {
 	return logger
 }
 
+func (h *handler) Delete(session ssh.Session, file *utils.FileEntry) error {
+	str := fmt.Sprintf("Deleted file: %+v from session: %+v", file, session)
+	log.Print(str)
+	return nil
+}
+
 func (h *handler) Write(session ssh.Session, file *utils.FileEntry) (string, error) {
 	str := fmt.Sprintf("Received file: %+v from session: %+v", file, session)
 	log.Print(str)
