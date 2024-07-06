@@ -146,6 +146,7 @@ func (h *handler) Put(file *rsyncutils.ReceiverFile) (int64, error) {
 		nMsg := fmt.Sprintf("%s\r\n", msg)
 		_, err = h.session.Stderr().Write([]byte(nMsg))
 	}
+	file.Buf.Reset()
 	return 0, err
 }
 
