@@ -2,11 +2,13 @@ module github.com/picosh/send
 
 go 1.22
 
+// replace github.com/picosh/go-rsync-receiver => ../go-rsync-receiver
+
 require (
-	github.com/antoniomika/go-rsync-receiver v0.0.0-20231110145728-c94949e1ab7d
 	github.com/charmbracelet/ssh v0.0.0-20230822194956-1a051f898e09
 	github.com/charmbracelet/wish v1.2.0
 	github.com/matryer/is v1.4.1
+	github.com/picosh/go-rsync-receiver v0.0.0-20240709135253-1daf4b12a9fc
 	github.com/pkg/sftp v1.13.6
 )
 

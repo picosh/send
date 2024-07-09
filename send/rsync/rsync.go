@@ -10,11 +10,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antoniomika/go-rsync-receiver/rsyncreceiver"
-	"github.com/antoniomika/go-rsync-receiver/rsyncsender"
-	rsyncutils "github.com/antoniomika/go-rsync-receiver/utils"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
+	"github.com/picosh/go-rsync-receiver/rsyncreceiver"
+	"github.com/picosh/go-rsync-receiver/rsyncsender"
+	rsyncutils "github.com/picosh/go-rsync-receiver/utils"
 	"github.com/picosh/send/send/utils"
 )
 
