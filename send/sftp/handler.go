@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/charmbracelet/ssh"
+	"github.com/charmbracelet/wish"
 	"github.com/picosh/send/send/utils"
 	"github.com/pkg/sftp"
 )
@@ -126,4 +127,37 @@ func (f *handler) Fileread(r *sftp.Request) (io.ReaderAt, error) {
 	_, reader, err := f.writeHandler.Read(f.session, fileEntry)
 
 	return reader, err
+}
+
+type handlererr struct {
+	Handler *handler
+}
+
+func (f *handlererr) Filecmd(r *sftp.Request) error {
+	err := f.Handler.Filecmd(r)
+	if err != nil {
+		wish.Errorln(f.Handler.session, err)
+	}
+	return err
+}
+func (f *handlererr) Filelist(r *sftp.Request) (sftp.ListerAt, error) {
+	result, err := f.Handler.Filelist(r)
+	if err != nil {
+		wish.Errorln(f.Handler.session, err)
+	}
+	return result, err
+}
+func (f *handlererr) Filewrite(r *sftp.Request) (io.WriterAt, error) {
+	result, err := f.Handler.Filewrite(r)
+	if err != nil {
+		wish.Errorln(f.Handler.session, err)
+	}
+	return result, err
+}
+func (f *handlererr) Fileread(r *sftp.Request) (io.ReaderAt, error) {
+	result, err := f.Handler.Fileread(r)
+	if err != nil {
+		wish.Errorln(f.Handler.session, err)
+	}
+	return result, err
 }

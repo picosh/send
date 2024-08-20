@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/charmbracelet/ssh"
+	"github.com/charmbracelet/wish"
 	"github.com/picosh/send/send/utils"
 	"github.com/pkg/sftp"
 )
@@ -25,19 +26,21 @@ func SubsystemHandler(writeHandler utils.CopyFromClientHandler) ssh.SubsystemHan
 		defer func() {
 			if r := recover(); r != nil {
 				writeHandler.GetLogger().Error("error running sftp middleware", "err", r)
-				_, _ = session.Stderr().Write([]byte("error running sftp middleware, check the flags you are using\r\n"))
+				wish.Println(session, "error running sftp middleware, check the flags you are using")
 			}
 		}()
 
 		err := writeHandler.Validate(session)
 		if err != nil {
-			utils.ErrorHandler(session, err)
+			wish.Errorln(session, err)
 			return
 		}
 
-		handler := &handler{
-			session:      session,
-			writeHandler: writeHandler,
+		handler := &handlererr{
+			Handler: &handler{
+				session:      session,
+				writeHandler: writeHandler,
+			},
 		}
 
 		handlers := sftp.Handlers{
@@ -51,6 +54,7 @@ func SubsystemHandler(writeHandler utils.CopyFromClientHandler) ssh.SubsystemHan
 
 		err = requestServer.Serve()
 		if err != nil && !errors.Is(err, io.EOF) {
+			wish.Errorln(session, err)
 			writeHandler.GetLogger().Error("Error serving sftp subsystem", "err", err)
 		}
 	}
