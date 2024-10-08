@@ -15,7 +15,7 @@ import (
 	"github.com/picosh/go-rsync-receiver/rsyncreceiver"
 	"github.com/picosh/go-rsync-receiver/rsyncsender"
 	rsyncutils "github.com/picosh/go-rsync-receiver/utils"
-	"github.com/picosh/send/send/utils"
+	"github.com/picosh/send/utils"
 )
 
 type handler struct {

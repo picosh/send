@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/charmbracelet/ssh"
-	"github.com/picosh/send/send/utils"
+	"github.com/picosh/send/utils"
 )
 
 var (

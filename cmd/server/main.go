@@ -10,8 +10,8 @@ import (
 
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/picosh/send/send"
-	"github.com/picosh/send/send/utils"
+	"github.com/picosh/send/protocols"
+	"github.com/picosh/send/utils"
 )
 
 type handler struct {
@@ -63,7 +63,7 @@ func main() {
 	s, err := wish.NewServer(
 		wish.WithAddress("localhost:9000"),
 		wish.WithHostKeyPath("ssh_data/term_info_ed25519"),
-		send.Middleware(h),
+		protocols.Middleware(h),
 	)
 
 	if err != nil {

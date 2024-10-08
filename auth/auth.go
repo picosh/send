@@ -3,7 +3,7 @@ package auth
 import (
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/picosh/send/send/utils"
+	"github.com/picosh/send/utils"
 )
 
 func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {

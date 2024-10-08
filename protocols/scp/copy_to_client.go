@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/charmbracelet/ssh"
-	"github.com/picosh/send/send/utils"
+	"github.com/picosh/send/utils"
 )
 
 func copyToClient(session ssh.Session, info Info, handler utils.CopyFromClientHandler) error {

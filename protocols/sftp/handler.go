@@ -11,7 +11,7 @@ import (
 
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/picosh/send/send/utils"
+	"github.com/picosh/send/utils"
 	"github.com/pkg/sftp"
 )
 

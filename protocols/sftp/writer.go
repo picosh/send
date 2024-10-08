@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/picosh/send/send/utils"
+	"github.com/picosh/send/utils"
 )
 
 type buffer struct {
