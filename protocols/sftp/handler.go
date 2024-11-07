@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -93,12 +94,24 @@ func (f *handler) Filelist(r *sftp.Request) (sftp.ListerAt, error) {
 }
 
 func toFileEntry(r *sftp.Request) *utils.FileEntry {
+	attrs := r.Attributes()
+	var size int64 = 0
+	var mtime int64 = 0
+	var atime int64 = 0
+	var mode fs.FileMode
+	if attrs != nil {
+		mode = attrs.FileMode()
+		size = int64(attrs.Size)
+		mtime = int64(attrs.Mtime)
+		atime = int64(attrs.Atime)
+	}
+
 	entry := &utils.FileEntry{
 		Filepath: r.Filepath,
-		Mode:     r.Attributes().FileMode(),
-		Size:     int64(r.Attributes().Size),
-		Mtime:    int64(r.Attributes().Mtime),
-		Atime:    int64(r.Attributes().Atime),
+		Mode:     mode,
+		Size:     size,
+		Mtime:    mtime,
+		Atime:    atime,
 	}
 	return entry
 }
