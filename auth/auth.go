@@ -12,7 +12,6 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 			defer func() {
 				if r := recover(); r != nil {
 					writeHandler.GetLogger().Error("error running auth middleware", "err", r)
-					_, _ = session.Stderr().Write([]byte("error running auth middleware\r\n"))
 				}
 			}()
 
