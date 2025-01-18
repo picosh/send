@@ -25,6 +25,7 @@ type FileEntry struct {
 	Reader   io.Reader
 	Atime    int64
 	Mtime    int64
+	Metadata map[string]string
 }
 
 // Write a file to the given writer.
