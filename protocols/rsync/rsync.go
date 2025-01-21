@@ -3,7 +3,6 @@ package rsync
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -115,7 +114,7 @@ func (h *handler) List(rPath string) ([]fs.FileInfo, error) {
 	return newList, nil
 }
 
-func (h *handler) Read(file *rsyncutils.SenderFile) (os.FileInfo, io.ReaderAt, error) {
+func (h *handler) Read(file *rsyncutils.SenderFile) (os.FileInfo, rsyncutils.ReaderAtCloser, error) {
 	filePath := file.WPath
 
 	if strings.HasSuffix(h.root, file.WPath) {
