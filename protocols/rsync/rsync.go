@@ -230,8 +230,35 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 				return
 			}
 
-			if _, err := rsyncreceiver.ClientRun(opts, session, fileHandler, true); err != nil {
+			_, changeList, err := rsyncreceiver.ClientRun(opts, session, fileHandler, true)
+			if err != nil {
 				writeHandler.GetLogger().Error("error running rsync receiver", "err", err)
+				return
+			}
+
+			if opts.Delete {
+				fList, err := fileHandler.List(".")
+				if err != nil {
+					_, _ = session.Stderr().Write([]byte(fmt.Sprintf("error getting file list for delete: %s\r\n", err.Error())))
+					return
+				}
+
+				for _, file := range fList {
+					if !file.IsDir() {
+						found := false
+						for _, change := range changeList {
+							if change.Name == file.Name() {
+								found = true
+								break
+							}
+						}
+
+						if found {
+							session.Stderr().Write([]byte(fmt.Sprintf("would delete %s\r\n", file.Name())))
+							// fileHandler.writeHandler.Delete(session, &utils.FileEntry{Filepath: file.Name()})
+						}
+					}
+				}
 			}
 		}
 	}
