@@ -149,8 +149,31 @@ func (h *handler) Put(file *rsyncutils.ReceiverFile) (int64, error) {
 	return 0, err
 }
 
-func (h *handler) Remove(file *rsyncutils.ReceiverFile) error {
-	return h.writeHandler.Delete(h.session, &utils.FileEntry{Filepath: file.Name})
+func (h *handler) Remove(willReceive []*rsyncutils.ReceiverFile) error {
+	entries, err := h.writeHandler.List(h.session, path.Join("/", h.root), true, true)
+	if err != nil {
+		return err
+	}
+
+	var toDelete []string
+
+	for _, entry := range entries {
+		exists := slices.ContainsFunc(willReceive, func(rf *rsyncutils.ReceiverFile) bool {
+			return rf.Name == entry.Name()
+		})
+
+		if !exists {
+			toDelete = append(toDelete, entry.Name())
+		}
+	}
+
+	var errs []error
+
+	for _, file := range toDelete {
+		errs = append(errs, h.writeHandler.Delete(h.session, &utils.FileEntry{Filepath: path.Join("/", h.root, file)}))
+	}
+
+	return errors.Join(errs...)
 }
 
 func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
