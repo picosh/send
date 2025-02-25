@@ -192,12 +192,6 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 				return
 			}
 
-			fileHandler := &handler{
-				session:      session,
-				writeHandler: writeHandler,
-				root:         strings.TrimPrefix(cmd[len(cmd)-1], "/"),
-			}
-
 			cmdFlags := session.Command()
 
 			optsCtx, err := rsyncopts.ParseArguments(cmdFlags[1:], true)
@@ -206,12 +200,22 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 				return
 			}
 
-			fileHandler.recursive = optsCtx.Options.Recurse()
-			fileHandler.ignoreTimes = !optsCtx.Options.PreserveMTimes()
-
 			if optsCtx.Options.Compress() {
 				_, _ = session.Stderr().Write([]byte("compression is currently unsupported\r\n"))
 				return
+			}
+
+			if len(optsCtx.RemainingArgs) != 2 {
+				_, _ = session.Stderr().Write([]byte("missing source and destination arguments\r\n"))
+				return
+			}
+
+			fileHandler := &handler{
+				session:      session,
+				writeHandler: writeHandler,
+				root:         strings.TrimPrefix(optsCtx.RemainingArgs[len(optsCtx.RemainingArgs)-1], "/"),
+				recursive:    optsCtx.Options.Recurse(),
+				ignoreTimes:  !optsCtx.Options.PreserveMTimes(),
 			}
 
 			for _, arg := range cmd {
