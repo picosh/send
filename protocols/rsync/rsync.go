@@ -210,10 +210,15 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 				return
 			}
 
+			root := strings.TrimPrefix(optsCtx.RemainingArgs[len(optsCtx.RemainingArgs)-1], "/")
+			if root == "" {
+				root = "/"
+			}
+
 			fileHandler := &handler{
 				session:      session,
 				writeHandler: writeHandler,
-				root:         strings.TrimPrefix(optsCtx.RemainingArgs[len(optsCtx.RemainingArgs)-1], "/"),
+				root:         root,
 				recursive:    optsCtx.Options.Recurse(),
 				ignoreTimes:  !optsCtx.Options.PreserveMTimes(),
 			}
