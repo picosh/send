@@ -40,7 +40,7 @@ func (h *handler) Validate(session ssh.Session) error {
 	return nil
 }
 
-func (h *handler) Read(session ssh.Session, entry *utils.FileEntry) (os.FileInfo, utils.ReaderAtCloser, error) {
+func (h *handler) Read(session ssh.Session, entry *utils.FileEntry) (os.FileInfo, utils.ReadAndReaderAtCloser, error) {
 	log.Printf("Received validate from session: %+v", session)
 
 	data := strings.NewReader("lorem ipsum dolor")
@@ -50,7 +50,7 @@ func (h *handler) Read(session ssh.Session, entry *utils.FileEntry) (os.FileInfo
 		FIsDir:   false,
 		FSize:    data.Size(),
 		FModTime: time.Now(),
-	}, utils.NopReaderAtCloser(data), nil
+	}, utils.NopReadAndReaderAtCloser(data), nil
 }
 
 func (h *handler) List(session ssh.Session, fpath string, isDir bool, recursive bool) ([]os.FileInfo, error) {

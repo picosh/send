@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
+	"github.com/picosh/go-rsync-receiver/rsyncopts"
 	"github.com/picosh/go-rsync-receiver/rsyncreceiver"
 	"github.com/picosh/go-rsync-receiver/rsyncsender"
 	rsyncutils "github.com/picosh/go-rsync-receiver/utils"
@@ -134,7 +135,7 @@ func (h *handler) Put(file *rsyncutils.ReceiverFile) (int64, error) {
 		Mtime:    file.ModTime.Unix(),
 		Atime:    file.ModTime.Unix(),
 	}
-	fileEntry.Reader = file.Buf
+	fileEntry.Reader = file.Reader
 
 	msg, err := h.writeHandler.Write(h.session, fileEntry)
 	if err != nil {
@@ -145,8 +146,34 @@ func (h *handler) Put(file *rsyncutils.ReceiverFile) (int64, error) {
 		nMsg := fmt.Sprintf("%s\r\n", msg)
 		_, err = h.session.Stderr().Write([]byte(nMsg))
 	}
-	file.Buf.Reset()
 	return 0, err
+}
+
+func (h *handler) Remove(willReceive []*rsyncutils.ReceiverFile) error {
+	entries, err := h.writeHandler.List(h.session, path.Join("/", h.root), true, true)
+	if err != nil {
+		return err
+	}
+
+	var toDelete []string
+
+	for _, entry := range entries {
+		exists := slices.ContainsFunc(willReceive, func(rf *rsyncutils.ReceiverFile) bool {
+			return rf.Name == entry.Name()
+		})
+
+		if !exists {
+			toDelete = append(toDelete, entry.Name())
+		}
+	}
+
+	var errs []error
+
+	for _, file := range toDelete {
+		errs = append(errs, h.writeHandler.Delete(h.session, &utils.FileEntry{Filepath: path.Join("/", h.root, file)}))
+	}
+
+	return errors.Join(errs...)
 }
 
 func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
@@ -165,100 +192,50 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 				return
 			}
 
+			cmdFlags := session.Command()
+
+			optsCtx, err := rsyncopts.ParseArguments(cmdFlags[1:], true)
+			if err != nil {
+				_, _ = session.Stderr().Write([]byte(fmt.Sprintf("error parsing rsync arguments: %s\r\n", err.Error())))
+				return
+			}
+
+			if optsCtx.Options.Compress() {
+				_, _ = session.Stderr().Write([]byte("compression is currently unsupported\r\n"))
+				return
+			}
+
+			if len(optsCtx.RemainingArgs) != 2 {
+				_, _ = session.Stderr().Write([]byte("missing source and destination arguments\r\n"))
+				return
+			}
+
+			root := strings.TrimPrefix(optsCtx.RemainingArgs[len(optsCtx.RemainingArgs)-1], "/")
+			if root == "" {
+				root = "/"
+			}
+
 			fileHandler := &handler{
 				session:      session,
 				writeHandler: writeHandler,
-				root:         strings.TrimPrefix(cmd[len(cmd)-1], "/"),
+				root:         root,
+				recursive:    optsCtx.Options.Recurse(),
+				ignoreTimes:  !optsCtx.Options.PreserveMTimes(),
 			}
-
-			cmdFlags := session.Command()
 
 			for _, arg := range cmd {
 				if arg == "--sender" {
-					opts, parser := rsyncsender.NewGetOpt()
-
-					compress := parser.Bool("z", false)
-
-					_, _ = parser.Parse(cmdFlags[1:])
-
-					fileHandler.recursive = opts.Recurse
-					fileHandler.ignoreTimes = opts.IgnoreTimes
-
-					if *compress {
-						_, _ = session.Stderr().Write([]byte("compression is currently unsupported\r\n"))
-						return
-					}
-
-					if opts.PreserveUid {
-						_, _ = session.Stderr().Write([]byte("uid preservation will not work as we don't retain user information\r\n"))
-						return
-					}
-
-					if opts.PreserveGid {
-						_, _ = session.Stderr().Write([]byte("gid preservation will not work as we don't retain user information\r\n"))
-						return
-					}
-
-					if err := rsyncsender.ClientRun(opts, session, fileHandler, fileHandler.root, true); err != nil {
+					if err := rsyncsender.ClientRun(optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true); err != nil {
 						writeHandler.GetLogger().Error("error running rsync sender", "err", err)
 					}
 					return
 				}
 			}
 
-			opts, parser := rsyncreceiver.NewGetOpt()
-
-			compress := parser.Bool("z", false)
-
-			_, _ = parser.Parse(cmdFlags[1:])
-
-			fileHandler.recursive = opts.Recurse
-			fileHandler.ignoreTimes = opts.IgnoreTimes
-
-			if *compress {
-				_, _ = session.Stderr().Write([]byte("compression is currently unsupported\r\n"))
-				return
-			}
-
-			if opts.PreserveUid {
-				_, _ = session.Stderr().Write([]byte("uid preservation will not work as we don't retain user information\r\n"))
-				return
-			}
-
-			if opts.PreserveGid {
-				_, _ = session.Stderr().Write([]byte("gid preservation will not work as we don't retain user information\r\n"))
-				return
-			}
-
-			_, changeList, err := rsyncreceiver.ClientRun(opts, session, fileHandler, true)
+			err = rsyncreceiver.ClientRun(optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true)
 			if err != nil {
 				writeHandler.GetLogger().Error("error running rsync receiver", "err", err)
 				return
-			}
-
-			if opts.Delete {
-				fList, err := fileHandler.List(".")
-				if err != nil {
-					_, _ = session.Stderr().Write([]byte(fmt.Sprintf("error getting file list for delete: %s\r\n", err.Error())))
-					return
-				}
-
-				for _, file := range fList {
-					if !file.IsDir() {
-						found := false
-						for _, change := range changeList {
-							if change.Name == file.Name() {
-								found = true
-								break
-							}
-						}
-
-						if found {
-							session.Stderr().Write([]byte(fmt.Sprintf("would delete %s\r\n", file.Name())))
-							// fileHandler.writeHandler.Delete(session, &utils.FileEntry{Filepath: file.Name()})
-						}
-					}
-				}
 			}
 		}
 	}

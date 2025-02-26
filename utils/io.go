@@ -9,17 +9,18 @@ type ReadAndReaderAt interface {
 	io.Reader
 }
 
-type ReaderAtCloser interface {
+type ReadAndReaderAtCloser interface {
+	io.Reader
 	io.ReaderAt
 	io.ReadCloser
 }
 
-func NopReaderAtCloser(r ReadAndReaderAt) ReaderAtCloser {
-	return nopReaderAtCloser{r}
+func NopReadAndReaderAtCloser(r ReadAndReaderAt) ReadAndReaderAtCloser {
+	return nopReadAndReaderAt{r}
 }
 
-type nopReaderAtCloser struct {
+type nopReadAndReaderAt struct {
 	ReadAndReaderAt
 }
 
-func (nopReaderAtCloser) Close() error { return nil }
+func (nopReadAndReaderAt) Close() error { return nil }

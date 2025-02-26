@@ -60,7 +60,7 @@ type CopyFromClientHandler interface {
 	// Write should write the given file.
 	Delete(ssh.Session, *FileEntry) error
 	Write(ssh.Session, *FileEntry) (string, error)
-	Read(ssh.Session, *FileEntry) (os.FileInfo, ReaderAtCloser, error)
+	Read(ssh.Session, *FileEntry) (os.FileInfo, ReadAndReaderAtCloser, error)
 	List(ssh ssh.Session, path string, isDir bool, recursive bool) ([]os.FileInfo, error)
 	GetLogger() *slog.Logger
 	Validate(ssh.Session) error
