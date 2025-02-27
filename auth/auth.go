@@ -11,7 +11,7 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 		return func(session ssh.Session) {
 			defer func() {
 				if r := recover(); r != nil {
-					writeHandler.GetLogger().Error("error running auth middleware", "err", r)
+					writeHandler.GetLogger(session).Error("error running auth middleware", "err", r)
 				}
 			}()
 

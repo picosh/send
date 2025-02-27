@@ -11,18 +11,23 @@ import (
 func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 	return func(sshHandler ssh.Handler) ssh.Handler {
 		return func(session ssh.Session) {
-			defer func() {
-				if r := recover(); r != nil {
-					writeHandler.GetLogger().Error("error running scp middleware", "err", r)
-					_, _ = session.Stderr().Write([]byte("error running scp middleware, check the flags you are using\r\n"))
-				}
-			}()
-
 			cmd := session.Command()
 			if len(cmd) == 0 || cmd[0] != "scp" {
 				sshHandler(session)
 				return
 			}
+
+			logger := writeHandler.GetLogger(session).With(
+				"scp", true,
+				"cmd", cmd,
+			)
+
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("error running scp middleware", "err", r)
+					_, _ = session.Stderr().Write([]byte("error running scp middleware, check the flags you are using\r\n"))
+				}
+			}()
 
 			info := GetInfo(cmd)
 			if !info.Ok {

@@ -17,7 +17,7 @@ import (
 type handler struct {
 }
 
-func (h *handler) GetLogger() *slog.Logger {
+func (h *handler) GetLogger(session ssh.Session) *slog.Logger {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	return logger
 }

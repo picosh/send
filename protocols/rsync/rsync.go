@@ -171,6 +171,7 @@ func (h *handler) Remove(willReceive []*rsyncutils.ReceiverFile) error {
 
 	for _, file := range toDelete {
 		errs = append(errs, h.writeHandler.Delete(h.session, &utils.FileEntry{Filepath: path.Join("/", h.root, file)}))
+		_, err = h.session.Stderr().Write([]byte(fmt.Sprintf("deleting %s\r\n", file)))
 	}
 
 	return errors.Join(errs...)
@@ -179,18 +180,23 @@ func (h *handler) Remove(willReceive []*rsyncutils.ReceiverFile) error {
 func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 	return func(sshHandler ssh.Handler) ssh.Handler {
 		return func(session ssh.Session) {
-			defer func() {
-				if r := recover(); r != nil {
-					writeHandler.GetLogger().Error("error running rsync middleware", "err", r)
-					_, _ = session.Stderr().Write([]byte("error running rsync middleware, check the flags you are using\r\n"))
-				}
-			}()
-
 			cmd := session.Command()
 			if len(cmd) == 0 || cmd[0] != "rsync" {
 				sshHandler(session)
 				return
 			}
+
+			logger := writeHandler.GetLogger(session).With(
+				"rsync", true,
+				"cmd", cmd,
+			)
+
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("error running rsync middleware", "err", r)
+					_, _ = session.Stderr().Write([]byte("error running rsync middleware, check the flags you are using\r\n"))
+				}
+			}()
 
 			cmdFlags := session.Command()
 
@@ -225,16 +231,16 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 
 			for _, arg := range cmd {
 				if arg == "--sender" {
-					if err := rsyncsender.ClientRun(optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true); err != nil {
-						writeHandler.GetLogger().Error("error running rsync sender", "err", err)
+					if err := rsyncsender.ClientRun(logger, optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true); err != nil {
+						logger.Error("error running rsync sender", "err", err)
 					}
 					return
 				}
 			}
 
-			err = rsyncreceiver.ClientRun(optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true)
+			err = rsyncreceiver.ClientRun(logger, optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true)
 			if err != nil {
-				writeHandler.GetLogger().Error("error running rsync receiver", "err", err)
+				logger.Error("error running rsync receiver", "err", err)
 				return
 			}
 		}
