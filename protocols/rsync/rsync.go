@@ -31,8 +31,9 @@ func (h *handler) Skip(file *rsyncutils.ReceiverFile) bool {
 		return true
 	}
 
-	fI, _, err := h.writeHandler.Read(h.session, &utils.FileEntry{Filepath: path.Join("/", h.root, file.Name)})
+	fI, r, err := h.writeHandler.Read(h.session, &utils.FileEntry{Filepath: path.Join("/", h.root, file.Name)})
 	if err == nil && fI.ModTime().Equal(file.ModTime) && file.Length == fI.Size() {
+		r.Close()
 		return true
 	}
 
