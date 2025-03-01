@@ -199,6 +199,11 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 				return
 			}
 
+			if optsCtx.Options.AlwaysChecksum() {
+				_, _ = session.Stderr().Write([]byte("checksum is currently unsupported\r\n"))
+				return
+			}
+
 			if len(optsCtx.RemainingArgs) != 2 {
 				_, _ = session.Stderr().Write([]byte("missing source and destination arguments\r\n"))
 				return
