@@ -26,20 +26,6 @@ type handler struct {
 	ignoreTimes  bool
 }
 
-func (h *handler) Skip(file *rsyncutils.ReceiverFile) bool {
-	if file.FileMode().IsDir() {
-		return true
-	}
-
-	fI, r, err := h.writeHandler.Read(h.session, &utils.FileEntry{Filepath: path.Join("/", h.root, file.Name)})
-	if err == nil && fI.ModTime().Equal(file.ModTime) && file.Length == fI.Size() {
-		r.Close()
-		return true
-	}
-
-	return false
-}
-
 func (h *handler) List(rPath string) ([]fs.FileInfo, error) {
 	isDir := false
 	if rPath == "." {
