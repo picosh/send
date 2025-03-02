@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20230822194956-1a051f898e09
 	github.com/charmbracelet/wish v1.2.0
 	github.com/matryer/is v1.4.1
-	github.com/picosh/go-rsync-receiver v0.0.0-20250301143036-9c603afca2bd
+	github.com/picosh/go-rsync-receiver v0.0.0-20250302184209-cbf8532bc383
 	github.com/pkg/sftp v1.13.6
 )
 
