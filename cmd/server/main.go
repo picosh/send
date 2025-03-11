@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/wish"
 	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 )
@@ -59,17 +58,17 @@ func (h *handler) List(session *pssh.SSHServerConnSession, fpath string, isDir b
 func main() {
 	// h := &handler{}
 
-	s, err := wish.NewServer(
-		wish.WithAddress("localhost:9000"),
-		wish.WithHostKeyPath("ssh_data/term_info_ed25519"),
-		// protocols.Middleware(h),
-	)
+	// s, err := wish.NewServer(
+	// 	wish.WithAddress("localhost:9000"),
+	// 	wish.WithHostKeyPath("ssh_data/term_info_ed25519"),
+	// 	// protocols.Middleware(h),
+	// )
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	log.Println("Starting ssh server on 9000")
+	// log.Println("Starting ssh server on 9000")
 
-	log.Fatal(s.ListenAndServe())
+	// log.Fatal(s.ListenAndServe())
 }
