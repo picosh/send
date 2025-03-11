@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/charmbracelet/ssh"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 )
 
@@ -28,7 +28,7 @@ func (e parseError) Error() string {
 	return fmt.Sprintf("failed to parse: %q", e.subject)
 }
 
-func copyFromClient(session ssh.Session, info Info, handler utils.CopyFromClientHandler) error {
+func copyFromClient(session *pssh.SSHServerConnSession, info Info, handler utils.CopyFromClientHandler) error {
 	// accepts the request
 	_, _ = session.Write(utils.NULL)
 

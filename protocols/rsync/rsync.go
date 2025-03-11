@@ -9,17 +9,16 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
 	"github.com/picosh/go-rsync-receiver/rsyncopts"
 	"github.com/picosh/go-rsync-receiver/rsyncreceiver"
 	"github.com/picosh/go-rsync-receiver/rsyncsender"
 	rsyncutils "github.com/picosh/go-rsync-receiver/utils"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 )
 
 type handler struct {
-	session      ssh.Session
+	session      *pssh.SSHServerConnSession
 	writeHandler utils.CopyFromClientHandler
 	root         string
 	recursive    bool
@@ -165,13 +164,12 @@ func (h *handler) Remove(willReceive []*rsyncutils.ReceiverFile) error {
 	return errors.Join(errs...)
 }
 
-func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
-	return func(sshHandler ssh.Handler) ssh.Handler {
-		return func(session ssh.Session) {
+func Middleware(writeHandler utils.CopyFromClientHandler) pssh.SSHServerMiddleware {
+	return func(sshHandler pssh.SSHServerHandler) pssh.SSHServerHandler {
+		return func(session *pssh.SSHServerConnSession) error {
 			cmd := session.Command()
 			if len(cmd) == 0 || cmd[0] != "rsync" {
-				sshHandler(session)
-				return
+				return sshHandler(session)
 			}
 
 			logger := writeHandler.GetLogger(session).With(
@@ -190,23 +188,26 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 
 			optsCtx, err := rsyncopts.ParseArguments(cmdFlags[1:], true)
 			if err != nil {
-				_, _ = session.Stderr().Write([]byte(fmt.Sprintf("error parsing rsync arguments: %s\r\n", err.Error())))
-				return
+				fmt.Fprintf(session.Stderr(), "error parsing rsync arguments: %s\r\n", err.Error())
+				return err
 			}
 
 			if optsCtx.Options.Compress() {
-				_, _ = session.Stderr().Write([]byte("compression is currently unsupported\r\n"))
-				return
+				err := fmt.Errorf("compression is currently unsupported")
+				fmt.Fprintf(session.Stderr(), "error: %s\r\n", err.Error())
+				return err
 			}
 
 			if optsCtx.Options.AlwaysChecksum() {
-				_, _ = session.Stderr().Write([]byte("checksum is currently unsupported\r\n"))
-				return
+				err := fmt.Errorf("checksum is currently unsupported")
+				fmt.Fprintf(session.Stderr(), "error: %s\r\n", err.Error())
+				return err
 			}
 
 			if len(optsCtx.RemainingArgs) != 2 {
-				_, _ = session.Stderr().Write([]byte("missing source and destination arguments\r\n"))
-				return
+				err := fmt.Errorf("missing source and destination arguments")
+				fmt.Fprintf(session.Stderr(), "error: %s\r\n", err.Error())
+				return err
 			}
 
 			root := strings.TrimPrefix(optsCtx.RemainingArgs[len(optsCtx.RemainingArgs)-1], "/")
@@ -226,16 +227,17 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 				if arg == "--sender" {
 					if err := rsyncsender.ClientRun(logger, optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true); err != nil {
 						logger.Error("error running rsync sender", "err", err)
+						return err
 					}
-					return
 				}
 			}
 
 			err = rsyncreceiver.ClientRun(logger, optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true)
 			if err != nil {
 				logger.Error("error running rsync receiver", "err", err)
-				return
 			}
+
+			return err
 		}
 	}
 }

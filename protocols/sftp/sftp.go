@@ -2,64 +2,68 @@ package sftp
 
 import (
 	"errors"
+	"fmt"
 	"io"
 
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 	"github.com/pkg/sftp"
 )
 
-func SSHOption(writeHandler utils.CopyFromClientHandler) ssh.Option {
-	return func(server *ssh.Server) error {
-		if server.SubsystemHandlers == nil {
-			server.SubsystemHandlers = map[string]ssh.SubsystemHandler{}
-		}
+// func SSHOption(writeHandler utils.CopyFromClientHandler) ssh.Option {
+// 	return func(server *ssh.Server) error {
+// 		if server.SubsystemHandlers == nil {
+// 			server.SubsystemHandlers = map[string]ssh.SubsystemHandler{}
+// 		}
 
-		server.SubsystemHandlers["sftp"] = SubsystemHandler(writeHandler)
-		return nil
-	}
-}
+// 		server.SubsystemHandlers["sftp"] = SubsystemHandler(writeHandler)
+// 		return nil
+// 	}
+// }
 
-func SubsystemHandler(writeHandler utils.CopyFromClientHandler) ssh.SubsystemHandler {
-	return func(session ssh.Session) {
-		logger := writeHandler.GetLogger(session).With(
-			"sftp", true,
-		)
+func Middleware(writeHandler utils.CopyFromClientHandler) pssh.SSHServerMiddleware {
+	return func(next pssh.SSHServerHandler) pssh.SSHServerHandler {
+		return func(session *pssh.SSHServerConnSession) error {
+			logger := writeHandler.GetLogger(session).With(
+				"sftp", true,
+			)
 
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Error("error running sftp middleware", "err", r)
-				wish.Println(session, "error running sftp middleware, check the flags you are using")
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("error running sftp middleware", "err", r)
+					fmt.Fprintln(session, "error running sftp middleware, check the flags you are using")
+				}
+			}()
+
+			err := writeHandler.Validate(session)
+			if err != nil {
+				fmt.Fprintln(session.Stderr(), err)
+				return err
 			}
-		}()
 
-		err := writeHandler.Validate(session)
-		if err != nil {
-			wish.Errorln(session, err)
-			return
-		}
+			handler := &handlererr{
+				Handler: &handler{
+					session:      session,
+					writeHandler: writeHandler,
+				},
+			}
 
-		handler := &handlererr{
-			Handler: &handler{
-				session:      session,
-				writeHandler: writeHandler,
-			},
-		}
+			handlers := sftp.Handlers{
+				FilePut:  handler,
+				FileList: handler,
+				FileGet:  handler,
+				FileCmd:  handler,
+			}
 
-		handlers := sftp.Handlers{
-			FilePut:  handler,
-			FileList: handler,
-			FileGet:  handler,
-			FileCmd:  handler,
-		}
+			requestServer := sftp.NewRequestServer(session, handlers)
 
-		requestServer := sftp.NewRequestServer(session, handlers)
+			err = requestServer.Serve()
+			if err != nil && !errors.Is(err, io.EOF) {
+				fmt.Fprintln(session.Stderr(), err)
+				logger.Error("Error serving sftp subsystem", "err", err)
+			}
 
-		err = requestServer.Serve()
-		if err != nil && !errors.Is(err, io.EOF) {
-			wish.Errorln(session, err)
-			logger.Error("Error serving sftp subsystem", "err", err)
+			return err
 		}
 	}
 }

@@ -3,6 +3,7 @@ package sftp
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -10,8 +11,7 @@ import (
 
 	"slices"
 
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 	"github.com/pkg/sftp"
 )
@@ -31,7 +31,7 @@ func (f listerat) ListAt(ls []os.FileInfo, offset int64) (int, error) {
 }
 
 type handler struct {
-	session      ssh.Session
+	session      *pssh.SSHServerConnSession
 	writeHandler utils.CopyFromClientHandler
 }
 
@@ -149,28 +149,28 @@ type handlererr struct {
 func (f *handlererr) Filecmd(r *sftp.Request) error {
 	err := f.Handler.Filecmd(r)
 	if err != nil {
-		wish.Errorln(f.Handler.session, err)
+		fmt.Fprintln(f.Handler.session.Stderr(), err)
 	}
 	return err
 }
 func (f *handlererr) Filelist(r *sftp.Request) (sftp.ListerAt, error) {
 	result, err := f.Handler.Filelist(r)
 	if err != nil {
-		wish.Errorln(f.Handler.session, err)
+		fmt.Fprintln(f.Handler.session.Stderr(), err)
 	}
 	return result, err
 }
 func (f *handlererr) Filewrite(r *sftp.Request) (io.WriterAt, error) {
 	result, err := f.Handler.Filewrite(r)
 	if err != nil {
-		wish.Errorln(f.Handler.session, err)
+		fmt.Fprintln(f.Handler.session.Stderr(), err)
 	}
 	return result, err
 }
 func (f *handlererr) Fileread(r *sftp.Request) (io.ReaderAt, error) {
 	result, err := f.Handler.Fileread(r)
 	if err != nil {
-		wish.Errorln(f.Handler.session, err)
+		fmt.Fprintln(f.Handler.session.Stderr(), err)
 	}
 	return result, err
 }

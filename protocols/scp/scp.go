@@ -3,18 +3,16 @@ package scp
 import (
 	"fmt"
 
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 )
 
-func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
-	return func(sshHandler ssh.Handler) ssh.Handler {
-		return func(session ssh.Session) {
+func Middleware(writeHandler utils.CopyFromClientHandler) pssh.SSHServerMiddleware {
+	return func(sshHandler pssh.SSHServerHandler) pssh.SSHServerHandler {
+		return func(session *pssh.SSHServerConnSession) error {
 			cmd := session.Command()
 			if len(cmd) == 0 || cmd[0] != "scp" {
-				sshHandler(session)
-				return
+				return sshHandler(session)
 			}
 
 			logger := writeHandler.GetLogger(session).With(
@@ -31,8 +29,7 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 
 			info := GetInfo(cmd)
 			if !info.Ok {
-				sshHandler(session)
-				return
+				return sshHandler(session)
 			}
 
 			var err error
@@ -54,6 +51,8 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 			if err != nil {
 				utils.ErrorHandler(session, err)
 			}
+
+			return err
 		}
 	}
 }

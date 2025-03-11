@@ -7,19 +7,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 )
 
-func Middleware(writeHandler utils.CopyFromClientHandler, ext string) wish.Middleware {
-	return func(sshHandler ssh.Handler) ssh.Handler {
-		return func(session ssh.Session) {
+func Middleware(writeHandler utils.CopyFromClientHandler, ext string) pssh.SSHServerMiddleware {
+	return func(sshHandler pssh.SSHServerHandler) pssh.SSHServerHandler {
+		return func(session *pssh.SSHServerConnSession) error {
 			_, _, activePty := session.Pty()
 			if activePty {
-				_ = session.Exit(0)
-				_ = session.Close()
-				return
+				err := session.Exit(0)
+				err = session.Close()
+				return err
 			}
 
 			cmd := session.Command()
@@ -48,7 +47,7 @@ func Middleware(writeHandler utils.CopyFromClientHandler, ext string) wish.Middl
 			})
 			if err != nil {
 				utils.ErrorHandler(session, err)
-				return
+				return err
 			}
 
 			if result != "" {
@@ -56,10 +55,10 @@ func Middleware(writeHandler utils.CopyFromClientHandler, ext string) wish.Middl
 				if err != nil {
 					utils.ErrorHandler(session, err)
 				}
-				return
+				return err
 			}
 
-			sshHandler(session)
+			return sshHandler(session)
 		}
 	}
 }

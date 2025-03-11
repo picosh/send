@@ -4,24 +4,22 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 )
 
-func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
-	return func(sshHandler ssh.Handler) ssh.Handler {
-		return func(session ssh.Session) {
+func Middleware(writeHandler utils.CopyFromClientHandler) pssh.SSHServerMiddleware {
+	return func(sshHandler pssh.SSHServerHandler) pssh.SSHServerHandler {
+		return func(session *pssh.SSHServerConnSession) error {
 			cmd := session.Command()
 			if !(len(cmd) > 1 && cmd[0] == "command" && cmd[1] == "ls") {
-				sshHandler(session)
-				return
+				return sshHandler(session)
 			}
 
 			fileList, err := writeHandler.List(session, "/", true, false)
 			if err != nil {
 				utils.ErrorHandler(session, err)
-				return
+				return err
 			}
 
 			var data []string
@@ -40,6 +38,7 @@ func Middleware(writeHandler utils.CopyFromClientHandler) wish.Middleware {
 			if err != nil {
 				utils.ErrorHandler(session, err)
 			}
+			return err
 		}
 	}
 }

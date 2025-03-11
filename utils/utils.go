@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/charmbracelet/ssh"
+	"github.com/picosh/pico/pssh"
 )
 
 // NULL is an array with a single NULL byte.
@@ -58,15 +58,15 @@ func octalPerms(info fs.FileMode) string {
 // being copied from the client to the server.
 type CopyFromClientHandler interface {
 	// Write should write the given file.
-	Delete(ssh.Session, *FileEntry) error
-	Write(ssh.Session, *FileEntry) (string, error)
-	Read(ssh.Session, *FileEntry) (os.FileInfo, ReadAndReaderAtCloser, error)
-	List(ssh.Session, string, bool, bool) ([]os.FileInfo, error)
-	GetLogger(ssh.Session) *slog.Logger
-	Validate(ssh.Session) error
+	Delete(*pssh.SSHServerConnSession, *FileEntry) error
+	Write(*pssh.SSHServerConnSession, *FileEntry) (string, error)
+	Read(*pssh.SSHServerConnSession, *FileEntry) (os.FileInfo, ReadAndReaderAtCloser, error)
+	List(*pssh.SSHServerConnSession, string, bool, bool) ([]os.FileInfo, error)
+	GetLogger(*pssh.SSHServerConnSession) *slog.Logger
+	Validate(*pssh.SSHServerConnSession) error
 }
 
-func KeyText(session ssh.Session) (string, error) {
+func KeyText(session *pssh.SSHServerConnSession) (string, error) {
 	if session.PublicKey() == nil {
 		return "", fmt.Errorf("session doesn't have public key")
 	}
@@ -74,13 +74,13 @@ func KeyText(session ssh.Session) (string, error) {
 	return fmt.Sprintf("%s %s", session.PublicKey().Type(), kb), nil
 }
 
-func ErrorHandler(session ssh.Session, err error) {
+func ErrorHandler(session *pssh.SSHServerConnSession, err error) {
 	_, _ = fmt.Fprint(session.Stderr(), err, "\r\n")
 	_ = session.Exit(1)
 	_ = session.Close()
 }
 
-func PrintMsg(session ssh.Session, stdout []string, stderr []error) {
+func PrintMsg(session *pssh.SSHServerConnSession, stdout []string, stderr []error) {
 	output := ""
 	if len(stdout) > 0 {
 		for _, msg := range stdout {

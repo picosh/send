@@ -8,39 +8,38 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/picosh/send/protocols"
+	"github.com/picosh/pico/pssh"
 	"github.com/picosh/send/utils"
 )
 
 type handler struct {
 }
 
-func (h *handler) GetLogger(session ssh.Session) *slog.Logger {
+func (h *handler) GetLogger(session *pssh.SSHServerConnSession) *slog.Logger {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	return logger
 }
 
-func (h *handler) Delete(session ssh.Session, file *utils.FileEntry) error {
+func (h *handler) Delete(session *pssh.SSHServerConnSession, file *utils.FileEntry) error {
 	str := fmt.Sprintf("Deleted file: %+v from session: %+v", file, session)
 	log.Print(str)
 	return nil
 }
 
-func (h *handler) Write(session ssh.Session, file *utils.FileEntry) (string, error) {
+func (h *handler) Write(session *pssh.SSHServerConnSession, file *utils.FileEntry) (string, error) {
 	str := fmt.Sprintf("Received file: %+v from session: %+v", file, session)
 	log.Print(str)
 	return str, nil
 }
 
-func (h *handler) Validate(session ssh.Session) error {
+func (h *handler) Validate(session *pssh.SSHServerConnSession) error {
 	log.Printf("Received validate from session: %+v", session)
 
 	return nil
 }
 
-func (h *handler) Read(session ssh.Session, entry *utils.FileEntry) (os.FileInfo, utils.ReadAndReaderAtCloser, error) {
+func (h *handler) Read(session *pssh.SSHServerConnSession, entry *utils.FileEntry) (os.FileInfo, utils.ReadAndReaderAtCloser, error) {
 	log.Printf("Received validate from session: %+v", session)
 
 	data := strings.NewReader("lorem ipsum dolor")
@@ -53,17 +52,17 @@ func (h *handler) Read(session ssh.Session, entry *utils.FileEntry) (os.FileInfo
 	}, utils.NopReadAndReaderAtCloser(data), nil
 }
 
-func (h *handler) List(session ssh.Session, fpath string, isDir bool, recursive bool) ([]os.FileInfo, error) {
+func (h *handler) List(session *pssh.SSHServerConnSession, fpath string, isDir bool, recursive bool) ([]os.FileInfo, error) {
 	return nil, nil
 }
 
 func main() {
-	h := &handler{}
+	// h := &handler{}
 
 	s, err := wish.NewServer(
 		wish.WithAddress("localhost:9000"),
 		wish.WithHostKeyPath("ssh_data/term_info_ed25519"),
-		protocols.Middleware(h),
+		// protocols.Middleware(h),
 	)
 
 	if err != nil {
