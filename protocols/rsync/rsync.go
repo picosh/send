@@ -225,10 +225,11 @@ func Middleware(writeHandler utils.CopyFromClientHandler) pssh.SSHServerMiddlewa
 
 			for _, arg := range cmd {
 				if arg == "--sender" {
-					if err := rsyncsender.ClientRun(logger, optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true); err != nil {
+					err := rsyncsender.ClientRun(logger, optsCtx.Options, session, fileHandler, []string{fileHandler.root}, true)
+					if err != nil {
 						logger.Error("error running rsync sender", "err", err)
-						return err
 					}
+					return err
 				}
 			}
 
